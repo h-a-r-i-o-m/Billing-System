@@ -1,0 +1,2709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Local Billing System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary: #4a6ee0;
+            --primary-dark: #3a5bc7;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --text: #333;
+            --text-light: #777;
+            --bg: #f5f7fa;
+            --card-bg: #fff;
+            --border: #ddd;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        .dark-mode {
+            --primary: #5d7ce0;
+            --primary-dark: #4a6ee0;
+            --secondary: #8a93a2;
+            --success: #34ce57;
+            --danger: #e74c3c;
+            --warning: #ffd351;
+            --light: #2d3748;
+            --dark: #f8f9fa;
+            --text: #e2e8f0;
+            --text-light: #a0aec0;
+            --bg: #1a202c;
+            --card-bg: #2d3748;
+            --border: #4a5568;
+            --shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: var(--transition);
+        }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s;
+        }
+        
+        button:hover::after {
+            width: 300px;
+            height: 300px;
+            top: -150px;
+            left: -150px;
+        }
+        
+        button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background-color: var(--secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        button.secondary {
+            background-color: var(--secondary);
+        }
+        
+        button.secondary:hover:not(:disabled) {
+            background-color: #5a6268;
+        }
+        
+        button.success {
+            background-color: var(--success);
+        }
+        
+        button.success:hover:not(:disabled) {
+            background-color: #218838;
+        }
+        
+        button.danger {
+            background-color: var(--danger);
+        }
+        
+        button.danger:hover:not(:disabled) {
+            background-color: #c82333;
+        }
+        
+        button.warning {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+        
+        input, select, textarea {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: var(--card-bg);
+            color: var(--text);
+            width: 100%;
+            transition: var(--transition);
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 110, 224, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        input.error, select.error, textarea.error {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+        }
+        
+        /* Header Styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 15px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        
+        /* Home Page Styles */
+        .home-page {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+        
+        .search-sort-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .search-container {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+        
+        .search-container input {
+            padding-left: 40px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+        
+        .filter-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: var(--text-light);
+        }
+        
+        .sort-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .person-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .person-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        .person-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        
+        .person-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 18px;
+            color: var(--primary);
+        }
+        
+        .person-details {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 10px;
+            flex-grow: 1;
+        }
+        
+        .person-date {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .invoice-total {
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .delete-invoice-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .person-card:hover .delete-invoice-btn {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
+            grid-column: 1 / -1;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .pagination button {
+            padding: 8px 12px;
+        }
+        
+        .pagination button.active {
+            background-color: var(--primary-dark);
+        }
+        
+        /* Billing Page Styles */
+        .billing-page {
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+        
+        .billing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .customer-info {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        .info-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .info-group label {
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .info-group .required::after {
+            content: " *";
+            color: var(--danger);
+        }
+        
+        .billing-table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            animation: fadeInUp 0.5s ease 0.1s both;
+        }
+        
+        .billing-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--card-bg);
+            min-width: 800px;
+        }
+        
+        .billing-table th, .billing-table td {
+            border: 1px solid var(--border);
+            padding: 12px;
+            text-align: left;
+            transition: var(--transition);
+        }
+        
+        .billing-table th {
+            background-color: var(--light);
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .billing-table tr:hover {
+            background-color: rgba(74, 110, 224, 0.05);
+        }
+        
+        .billing-table input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            color: var(--text);
+            transition: var(--transition);
+        }
+        
+        .billing-table input:focus {
+            background-color: rgba(74, 110, 224, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .billing-table input[readonly] {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--text-light);
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.5s ease 0.2s both;
+        }
+        
+        .action-btn {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        
+        .summary-section {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            animation: fadeInUp 0.5s ease 0.3s both;
+        }
+        
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        
+        .summary-label {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+        
+        .summary-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .share-section {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: var(--shadow);
+            animation: fadeInUp 0.5s ease 0.4s both;
+        }
+        
+        .share-inputs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .share-inputs .info-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .toast {
+            background-color: var(--card-bg);
+            color: var(--text);
+            padding: 15px 20px;
+            border-radius: 6px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: var(--transition);
+            max-width: 350px;
+            animation: slideInRight 0.3s ease;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .toast.success {
+            border-left-color: var(--success);
+        }
+        
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+        
+        .toast.warning {
+            border-left-color: var(--warning);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: scaleIn 0.3s ease;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text);
+            transition: var(--transition);
+        }
+        
+        .modal-close:hover {
+            transform: rotate(90deg);
+        }
+        
+        /* Settings Page */
+        .settings-page {
+            display: none;
+        }
+        
+        .settings-section {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        
+        .settings-section h2 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        /* Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printSection, #printSection * {
+                visibility: visible;
+            }
+            #printSection {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from { 
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes scaleIn {
+            from { 
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to { 
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .info-row {
+                flex-direction: column;
+            }
+            
+            .share-inputs {
+                flex-direction: column;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 10px;
+            }
+            
+            .summary-section {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .summary-item {
+                align-items: flex-start;
+            }
+            
+            .person-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-container {
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+            
+            .filter-group {
+                min-width: 120px;
+                flex: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .action-btn {
+                padding: 8px;
+                font-size: 11px;
+            }
+            
+            .filter-container {
+                flex-direction: column;
+            }
+            
+            .filter-group {
+                min-width: 100%;
+            }
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Utility classes */
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .mt-20 {
+            margin-top: 20px;
+        }
+        
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .error-message {
+            color: var(--danger);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .date-cell {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!-- Print Section (Hidden until printing) -->
+    <div id="printSection" class="hidden"></div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Delete Invoice</h2>
+                <button class="modal-close" id="closeDeleteModal">&times;</button>
+            </div>
+            <p>Are you sure you want to delete this invoice? This action cannot be undone.</p>
+            <div class="actions mt-20">
+                <button id="confirmDeleteBtn" class="danger">Delete Invoice</button>
+                <button id="cancelDeleteBtn" class="secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Export/Import Data</h2>
+                <button class="modal-close" id="closeExportModal">&times;</button>
+            </div>
+            <div class="info-group mb-20">
+                <label for="exportData">Export Data (JSON)</label>
+                <textarea id="exportData" rows="6" readonly></textarea>
+            </div>
+            <div class="info-group mb-20">
+                <label for="importData">Import Data (JSON)</label>
+                <textarea id="importData" rows="6" placeholder="Paste JSON data here"></textarea>
+            </div>
+            <div class="actions">
+                <button id="copyExportData">Copy to Clipboard</button>
+                <button id="importDataBtn" class="success">Import Data</button>
+                <button id="downloadData" class="secondary">Download JSON</button>
+                <button id="backupToCloud" class="warning">Backup to Cloud (Demo)</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Application Settings</h2>
+                <button class="modal-close" id="closeSettingsModal">&times;</button>
+            </div>
+            <div class="settings-section">
+                <h3>Default Values</h3>
+                <div class="info-row">
+                    <div class="info-group">
+                        <label for="defaultTaxRate">Default Tax Rate (%)</label>
+                        <input type="number" id="defaultTaxRate" min="0" max="50" step="0.1">
+                    </div>
+                    <div class="info-group">
+                        <label for="defaultCurrency">Default Currency</label>
+                        <select id="defaultCurrency">
+                            <option value="NPR">NPR (रु)</option>
+                            <option value="USD">USD ($)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                            <option value="INR">INR (₹)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-group">
+                        <label for="defaultColumns">Default Table Columns</label>
+                        <input type="text" id="defaultColumns" placeholder="Item, Price, Quantity, Total, Date">
+                    </div>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>Backup & Restore</h3>
+                <div class="info-group mb-20">
+                    <label for="autoBackup">Auto Backup Frequency</label>
+                    <select id="autoBackup">
+                        <option value="never">Never</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <div class="actions">
+                    <button id="createBackupBtn" class="success">Create Backup Now</button>
+                    <button id="restoreBackupBtn" class="secondary">Restore from Backup</button>
+                </div>
+            </div>
+            <div class="actions mt-20">
+                <button id="saveSettingsBtn" class="success">Save Settings</button>
+                <button id="resetSettingsBtn" class="danger">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Home Page -->
+    <div id="homePage" class="home-page container">
+        <div class="header">
+            <h1>Advanced Billing System</h1>
+            <div class="header-actions">
+                <button id="settingsBtn" class="secondary">⚙️ Settings</button>
+                <button id="exportImportBtn" class="secondary">📊 Export/Import</button>
+                <button id="newInvoiceBtn" class="success">+ New Invoice</button>
+                <button id="themeToggle" class="theme-toggle">🌙 </button>
+            </div>
+        </div>
+        
+        <div class="search-sort-container">
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Search by name, phone, invoice number, or items...">
+            </div>
+            <div class="filter-container">
+                <div class="filter-group">
+                    <label for="dateFilter">Date Range</label>
+                    <select id="dateFilter">
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="amountFilter">Amount Range</label>
+                    <select id="amountFilter">
+                        <option value="all">All Amounts</option>
+                        <option value="0-1000">0 - 1,000</option>
+                        <option value="1000-5000">1,000 - 5,000</option>
+                        <option value="5000-10000">5,000 - 10,000</option>
+                        <option value="10000+">10,000+</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="statusFilter">Status</label>
+                    <select id="statusFilter">
+                        <option value="all">All Status</option>
+                        <option value="paid">Paid</option>
+                        <option value="unpaid">Unpaid</option>
+                        <option value="draft">Draft</option>
+                    </select>
+                </div>
+            </div>
+            <div class="sort-container">
+                <label for="sortSelect">Sort by:</label>
+                <select id="sortSelect">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="total-high">Highest Total</option>
+                    <option value="total-low">Lowest Total</option>
+                    <option value="name">Customer Name</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="personList" class="person-list">
+            <!-- Invoice cards will be dynamically generated here -->
+        </div>
+        
+        <div class="pagination" id="pagination">
+            <!-- Pagination buttons will be generated here -->
+        </div>
+    </div>
+    
+    <!-- Billing Page -->
+    <div id="billingPage" class="billing-page container">
+        <div class="billing-header">
+            <h1 id="billingPersonName">Invoice for <span id="customerNameDisplay">Customer</span></h1>
+            <div class="header-actions">
+                <button id="backToHomeBtn" class="secondary">← Back to Invoices</button>
+                <button id="printInvoiceBtn" class="secondary">🖨️ Print</button>
+                <button id="themeToggleBilling" class="theme-toggle">🌙 </button>
+            </div>
+        </div>
+        
+        <div class="customer-info">
+            <div class="info-row">
+                <div class="info-group">
+                    <label for="customerName" class="required">Customer Name</label>
+                    <input type="text" id="customerName" placeholder="Enter customer name">
+                    <div class="error-message" id="customerNameError"></div>
+                </div>
+                <div class="info-group">
+                    <label for="customerPhone">Phone Number</label>
+                    <input type="text" id="customerPhone" placeholder="Enter 10-digit number" maxlength="10">
+                    <div class="error-message" id="customerPhoneError"></div>
+                </div>
+                <div class="info-group">
+                    <label for="invoiceDate">Invoice Date</label>
+                    <input type="date" id="invoiceDate">
+                    <div class="error-message" id="invoiceDateError"></div>
+                </div>
+                <div class="info-group">
+                    <label for="invoiceNumber">Invoice #</label>
+                    <input type="text" id="invoiceNumber" placeholder="Auto-generated" readonly>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-group" style="flex: 2;">
+                    <label for="customerAddress">Address</label>
+                    <input type="text" id="customerAddress" placeholder="Enter customer address">
+                </div>
+                <div class="info-group">
+                    <label for="taxRate">Tax Rate (%)</label>
+                    <input type="number" id="taxRate" min="0" max="50" value="0" step="0.1">
+                    <div class="error-message" id="taxRateError"></div>
+                </div>
+                <div class="info-group">
+                    <label for="invoiceStatus">Status</label>
+                    <select id="invoiceStatus">
+                        <option value="draft">Draft</option>
+                        <option value="sent">Sent</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-group">
+                    <label for="currency">Currency</label>
+                    <select id="currency">
+                        <option value="NPR">NPR (रु)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="INR">INR (₹)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="billing-table-container">
+            <table id="billingTable" class="billing-table">
+                <!-- Table will be dynamically generated here -->
+            </table>
+        </div>
+        
+        <div class="actions">
+            <button id="saveInvoiceBtn" class="success action-btn">💾 Save</button>
+            <button id="addRowBtn" class="action-btn">➕ Add Row</button>
+            <button id="deleteRowBtn" class="danger action-btn">➖ Delete Row</button>
+            <button id="addColumnBtn" class="action-btn">📊 Add Column</button>
+            <button id="deleteColumnBtn" class="danger action-btn">🗑️ Delete Column</button>
+            <button id="clearTableBtn" class="danger action-btn">🗑️ Clear</button>
+            <button id="exportPdfBtn" class="warning action-btn">📄 PDF</button>
+        </div>
+        
+        <div class="summary-section">
+            <div class="summary-item">
+                <span class="summary-label">Subtotal</span>
+                <span id="subtotalValue" class="summary-value">रु 0.00</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Tax (<span id="taxRateDisplay">0%</span>)</span>
+                <span id="taxValue" class="summary-value">रु 0.00</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Grand Total</span>
+                <span id="totalValue" class="summary-value">रु 0.00</span>
+            </div>
+        </div>
+        
+        <div class="share-section">
+            <div class="share-inputs">
+                <div class="info-group">
+                    <label for="sharePhone">Phone Number *</label>
+                    <input type="text" id="sharePhone" placeholder="Enter 10-digit number" maxlength="10">
+                    <div class="error-message" id="sharePhoneError"></div>
+                </div>
+                <div class="info-group">
+                    <label for="messageNote">Additional Note</label>
+                    <input type="text" id="messageNote" placeholder="Add a note to your invoice (optional)">
+                </div>
+            </div>
+            <button id="shareWhatsAppBtn" class="success">📱 Share via WhatsApp</button>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced Data Storage with Backup Support
+        const DataManager = {
+            storageKey: 'advancedBillingData',
+            settingsKey: 'billingSettings',
+            backupKey: 'billingBackups',
+            invoiceCounterKey: 'invoiceCounter',
+            
+            // Load all data from localStorage with fallback
+            loadData: function() {
+                try {
+                    const data = localStorage.getItem(this.storageKey);
+                    return data ? JSON.parse(data) : [];
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    UI.showToast('Error loading data. Using default values.', 'error');
+                    return [];
+                }
+            },
+            
+            // Save all data to localStorage with error handling
+            saveData: function(data) {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(data));
+                    // Create backup if enabled
+                    this.createBackup(data);
+                    return true;
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                    UI.showToast('Error saving data. Data may not persist.', 'error');
+                    return false;
+                }
+            },
+            
+            // Load settings
+            loadSettings: function() {
+                try {
+                    const settings = localStorage.getItem(this.settingsKey);
+                    return settings ? JSON.parse(settings) : this.getDefaultSettings();
+                } catch (error) {
+                    console.error('Error loading settings:', error);
+                    return this.getDefaultSettings();
+                }
+            },
+            
+            // Save settings
+            saveSettings: function(settings) {
+                try {
+                    localStorage.setItem(this.settingsKey, JSON.stringify(settings));
+                    return true;
+                } catch (error) {
+                    console.error('Error saving settings:', error);
+                    return false;
+                }
+            },
+            
+            // Get default settings
+            getDefaultSettings: function() {
+                return {
+                    defaultTaxRate: 0,
+                    defaultCurrency: 'NPR',
+                    defaultColumns: 'Item, Price, Quantity, Total, Date',
+                    autoBackup: 'never',
+                    lastBackup: null
+                };
+            },
+            
+            // Create data backup
+            createBackup: function(data) {
+                try {
+                    const settings = this.loadSettings();
+                    if (settings.autoBackup === 'never') return;
+                    
+                    const now = new Date();
+                    const backup = {
+                        data: data,
+                        timestamp: now.toISOString(),
+                        version: '1.0'
+                    };
+                    
+                    let backups = JSON.parse(localStorage.getItem(this.backupKey) || '[]');
+                    backups.push(backup);
+                    
+                    // Keep only last 10 backups
+                    if (backups.length > 10) {
+                        backups = backups.slice(-10);
+                    }
+                    
+                    localStorage.setItem(this.backupKey, JSON.stringify(backups));
+                    settings.lastBackup = now.toISOString();
+                    this.saveSettings(settings);
+                } catch (error) {
+                    console.error('Error creating backup:', error);
+                }
+            },
+            
+            // Get available backups
+            getBackups: function() {
+                try {
+                    return JSON.parse(localStorage.getItem(this.backupKey) || '[]');
+                } catch (error) {
+                    console.error('Error loading backups:', error);
+                    return [];
+                }
+            },
+            
+            // Restore from backup
+            restoreBackup: function(backupIndex) {
+                try {
+                    const backups = this.getBackups();
+                    if (backups[backupIndex]) {
+                        this.saveData(backups[backupIndex].data);
+                        return { success: true, message: 'Backup restored successfully!' };
+                    }
+                    return { success: false, message: 'Backup not found' };
+                } catch (error) {
+                    console.error('Error restoring backup:', error);
+                    return { success: false, message: 'Error restoring backup' };
+                }
+            },
+            
+            // Get next invoice number
+            getNextInvoiceNumber: function() {
+                let counter = parseInt(localStorage.getItem(this.invoiceCounterKey)) || 0;
+                counter++;
+                localStorage.setItem(this.invoiceCounterKey, counter.toString());
+                
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                
+                return `INV-${year}${month}${day}-${String(counter).padStart(4, '0')}`;
+            },
+            
+            // Export data as JSON
+            exportData: function() {
+                const data = this.loadData();
+                return JSON.stringify(data, null, 2);
+            },
+            
+            // Import data from JSON
+            importData: function(jsonData) {
+                try {
+                    const data = JSON.parse(jsonData);
+                    if (Array.isArray(data)) {
+                        this.saveData(data);
+                        return { success: true, message: 'Data imported successfully!' };
+                    } else {
+                        return { success: false, message: 'Invalid data format' };
+                    }
+                } catch (error) {
+                    return { success: false, message: 'Invalid JSON format' };
+                }
+            },
+            
+            // Cloud backup simulation
+            cloudBackup: function() {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        // Simulate cloud backup
+                        const success = Math.random() > 0.2; // 80% success rate
+                        resolve({
+                            success: success,
+                            message: success ? 'Backup completed successfully!' : 'Backup failed. Please try again.'
+                        });
+                    }, 2000);
+                });
+            }
+        };
+
+        // Enhanced UI Utilities
+        const UI = {
+            // Show toast notification
+            showToast: function(message, type = 'info', duration = 4000) {
+                const toastContainer = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                
+                toastContainer.appendChild(toast);
+                
+                // Show toast
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 10);
+                
+                // Hide toast after duration
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (toastContainer.contains(toast)) {
+                            toastContainer.removeChild(toast);
+                        }
+                    }, 300);
+                }, duration);
+            },
+            
+            // Format currency based on selected currency
+            formatCurrency: function(amount, currency = 'NPR') {
+                const currencySymbols = {
+                    'NPR': 'रु',
+                    'USD': '$',
+                    'EUR': '€',
+                    'GBP': '£',
+                    'INR': '₹'
+                };
+                
+                const formatter = new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                
+                return `${currencySymbols[currency] || 'रु'} ${formatter.format(amount)}`;
+            },
+            
+            // Format phone number to Nepal format
+            formatPhone: function(phone) {
+                if (!phone) return '';
+                const cleaned = phone.replace(/\D/g, '');
+                
+                if (cleaned.length === 10) {
+                    return `+977 ${cleaned.substring(0, 3)}-${cleaned.substring(3)}`;
+                }
+                
+                return phone;
+            },
+            
+            // Validate phone number
+            validatePhone: function(phone) {
+                if (!phone) return false;
+                const cleaned = phone.replace(/\D/g, '');
+                return cleaned.length === 10;
+            },
+            
+            // Validate email
+            validateEmail: function(email) {
+                const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return re.test(email);
+            },
+            
+            // Debounce function
+            debounce: function(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            },
+            
+            // Toggle dark mode
+            toggleDarkMode: function() {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+                
+                const themeButtons = document.querySelectorAll('.theme-toggle');
+                themeButtons.forEach(btn => {
+                    btn.textContent = isDark ? '☀️' : '🌙';
+                });
+            },
+            
+            // Initialize dark mode
+            initDarkMode: function() {
+                const darkMode = localStorage.getItem('darkMode');
+                if (darkMode === 'enabled') {
+                    document.body.classList.add('dark-mode');
+                    const themeButtons = document.querySelectorAll('.theme-toggle');
+                    themeButtons.forEach(btn => {
+                        btn.textContent = '☀️';
+                    });
+                }
+            },
+            
+            // Show loading indicator
+            showLoading: function(element) {
+                element.innerHTML = '<div class="spinner"></div>';
+            },
+            
+            // Hide loading indicator
+            hideLoading: function(element, content) {
+                element.innerHTML = content;
+            },
+            
+            // Show error on field
+            showFieldError: function(fieldId, message) {
+                const field = document.getElementById(fieldId);
+                const errorElement = document.getElementById(fieldId + 'Error');
+                
+                field.classList.add('error');
+                errorElement.textContent = message;
+            },
+            
+            // Clear field error
+            clearFieldError: function(fieldId) {
+                const field = document.getElementById(fieldId);
+                const errorElement = document.getElementById(fieldId + 'Error');
+                
+                field.classList.remove('error');
+                errorElement.textContent = '';
+            },
+            
+            // Validate required fields
+            validateRequired: function(fieldId, fieldName) {
+                const value = document.getElementById(fieldId).value.trim();
+                if (!value) {
+                    this.showFieldError(fieldId, `${fieldName} is required`);
+                    return false;
+                }
+                this.clearFieldError(fieldId);
+                return true;
+            },
+            
+            // Validate number field
+            validateNumber: function(fieldId, fieldName, min = 0, max = Infinity) {
+                const value = parseFloat(document.getElementById(fieldId).value);
+                if (isNaN(value) || value < min || value > max) {
+                    this.showFieldError(fieldId, `${fieldName} must be a number between ${min} and ${max}`);
+                    return false;
+                }
+                this.clearFieldError(fieldId);
+                return true;
+            }
+        };
+
+        // PDF Generation Utility
+        const PDFGenerator = {
+            // Generate PDF from invoice data
+            generatePDF: function(invoice) {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const { jsPDF } = window.jspdf;
+                        const doc = new jsPDF();
+                        
+                        // Add title
+                        doc.setFontSize(20);
+                        doc.text('INVOICE', 105, 20, { align: 'center' });
+                        
+                        // Add invoice details
+                        doc.setFontSize(12);
+                        doc.text(`Invoice #: ${invoice.invoiceNumber}`, 20, 40);
+                        doc.text(`Date: ${invoice.invoiceDate}`, 20, 50);
+                        
+                        // Add customer details
+                        doc.text(`Bill To: ${invoice.name}`, 20, 80);
+                        if (invoice.address) {
+                            doc.text(`Address: ${invoice.address}`, 20, 90);
+                        }
+                        if (invoice.phone) {
+                            doc.text(`Phone: ${UI.formatPhone(invoice.phone)}`, 20, 100);
+                        }
+                        
+                        // Add table headers
+                        const headers = invoice.table.headers;
+                        const data = invoice.table.data.filter(row => row[0] && row[0].trim() !== '');
+                        
+                        // Prepare table data
+                        const tableData = data.map(row => [...row]);
+                        
+                        // Add table
+                        doc.autoTable({
+                            startY: 120,
+                            head: [headers],
+                            body: tableData,
+                            theme: 'grid',
+                            styles: { fontSize: 10 },
+                            headStyles: { fillColor: [74, 110, 224] }
+                        });
+                        
+                        // Add totals
+                        const finalY = doc.lastAutoTable.finalY + 10;
+                        doc.text(`Subtotal: ${UI.formatCurrency(this.calculateSubtotal(invoice), invoice.currency)}`, 150, finalY);
+                        doc.text(`Tax (${invoice.taxRate}%): ${UI.formatCurrency(this.calculateTax(invoice), invoice.currency)}`, 150, finalY + 10);
+                        doc.text(`Total: ${UI.formatCurrency(this.calculateTotal(invoice), invoice.currency)}`, 150, finalY + 20);
+                        
+                        // Add footer
+                        doc.setFontSize(10);
+                        doc.text('Thank you for your business!', 105, doc.internal.pageSize.height - 10, { align: 'center' });
+                        
+                        resolve(doc);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            },
+            
+            // Calculate subtotal for PDF
+            calculateSubtotal: function(invoice) {
+                const totalIndex = invoice.table.headers.findIndex(h => h.toLowerCase().includes('total'));
+                if (totalIndex === -1) return 0;
+                
+                return invoice.table.data.reduce((sum, row) => {
+                    return sum + (parseFloat(row[totalIndex]) || 0);
+                }, 0);
+            },
+            
+            // Calculate tax for PDF
+            calculateTax: function(invoice) {
+                const subtotal = this.calculateSubtotal(invoice);
+                return subtotal * (invoice.taxRate / 100);
+            },
+            
+            // Calculate total for PDF
+            calculateTotal: function(invoice) {
+                const subtotal = this.calculateSubtotal(invoice);
+                const tax = this.calculateTax(invoice);
+                return subtotal + tax;
+            },
+            
+            // Download PDF
+            downloadPDF: function(invoice) {
+                this.generatePDF(invoice)
+                    .then(doc => {
+                        doc.save(`invoice-${invoice.invoiceNumber}.pdf`);
+                        UI.showToast('PDF generated successfully!', 'success');
+                    })
+                    .catch(error => {
+                        console.error('PDF generation error:', error);
+                        UI.showToast('Error generating PDF', 'error');
+                    });
+            },
+            
+            // Print invoice
+            printInvoice: function(invoice) {
+                this.generatePDF(invoice)
+                    .then(doc => {
+                        const pdfBlob = doc.output('blob');
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        
+                        // Open PDF in new window for printing
+                        const printWindow = window.open(pdfUrl);
+                        printWindow.onload = function() {
+                            printWindow.print();
+                        };
+                    })
+                    .catch(error => {
+                        console.error('Print error:', error);
+                        UI.showToast('Error preparing invoice for printing', 'error');
+                    });
+            }
+        };
+
+        // Enhanced Billing System Main Logic
+        const BillingSystem = {
+            invoices: [],
+            currentInvoiceId: null,
+            itemsPerPage: 6,
+            currentPage: 1,
+            searchTerm: '',
+            sortBy: 'newest',
+            invoiceToDelete: null,
+            settings: {},
+            filters: {
+                date: 'all',
+                amount: 'all',
+                status: 'all'
+            },
+            
+            // Initialize the system
+            init: function() {
+                this.invoices = DataManager.loadData();
+                this.settings = DataManager.loadSettings();
+                UI.initDarkMode();
+                this.bindEvents();
+                this.applySettings();
+                this.renderHomePage();
+            },
+            
+            // Apply user settings
+            applySettings: function() {
+                // Set default values based on settings
+                document.getElementById('taxRate').value = this.settings.defaultTaxRate;
+                document.getElementById('currency').value = this.settings.defaultCurrency;
+                
+                // Update currency displays
+                this.updateCurrencyDisplays();
+            },
+            
+            // Update currency displays throughout the app
+            updateCurrencyDisplays: function(currency = null) {
+                const curr = currency || this.settings.defaultCurrency;
+                const elements = document.querySelectorAll('.summary-value');
+                elements.forEach(el => {
+                    const text = el.textContent;
+                    const amount = parseFloat(text.replace(/[^\d.-]/g, '')) || 0;
+                    el.textContent = UI.formatCurrency(amount, curr);
+                });
+            },
+            
+            // Bind event listeners
+            bindEvents: function() {
+                // Home page events
+                document.getElementById('newInvoiceBtn').addEventListener('click', () => this.createNewInvoice());
+                document.getElementById('searchInput').addEventListener('input', 
+                    UI.debounce(() => this.searchInvoices(), 300));
+                document.getElementById('sortSelect').addEventListener('change', (e) => {
+                    this.sortBy = e.target.value;
+                    this.renderHomePage();
+                });
+                document.getElementById('exportImportBtn').addEventListener('click', () => this.showExportModal());
+                document.getElementById('settingsBtn').addEventListener('click', () => this.showSettingsModal());
+                document.getElementById('themeToggle').addEventListener('click', UI.toggleDarkMode);
+                document.getElementById('themeToggleBilling').addEventListener('click', UI.toggleDarkMode);
+                
+                // Filter events
+                document.getElementById('dateFilter').addEventListener('change', (e) => {
+                    this.filters.date = e.target.value;
+                    this.renderHomePage();
+                });
+                document.getElementById('amountFilter').addEventListener('change', (e) => {
+                    this.filters.amount = e.target.value;
+                    this.renderHomePage();
+                });
+                document.getElementById('statusFilter').addEventListener('change', (e) => {
+                    this.filters.status = e.target.value;
+                    this.renderHomePage();
+                });
+                
+                // Billing page events
+                document.getElementById('backToHomeBtn').addEventListener('click', () => this.showHomePage());
+                document.getElementById('printInvoiceBtn').addEventListener('click', () => this.printInvoice());
+                document.getElementById('saveInvoiceBtn').addEventListener('click', () => this.saveInvoice());
+                document.getElementById('addRowBtn').addEventListener('click', () => this.addRow());
+                document.getElementById('deleteRowBtn').addEventListener('click', () => this.deleteLastRow());
+                document.getElementById('addColumnBtn').addEventListener('click', () => this.addColumn());
+                document.getElementById('deleteColumnBtn').addEventListener('click', () => this.deleteLastColumn());
+                document.getElementById('clearTableBtn').addEventListener('click', () => this.clearTable());
+                document.getElementById('shareWhatsAppBtn').addEventListener('click', () => this.shareOnWhatsApp());
+                document.getElementById('exportPdfBtn').addEventListener('click', () => this.exportToPdf());
+                
+                // Customer info events with validation
+                document.getElementById('customerName').addEventListener('input', () => {
+                    UI.clearFieldError('customerName');
+                    this.updateCustomerName();
+                });
+                document.getElementById('taxRate').addEventListener('input', () => {
+                    UI.clearFieldError('taxRate');
+                    this.calculateTotals();
+                });
+                document.getElementById('customerPhone').addEventListener('input', (e) => {
+                    UI.clearFieldError('customerPhone');
+                    this.formatPhoneField(e.target);
+                });
+                document.getElementById('currency').addEventListener('change', (e) => {
+                    this.updateCurrencyDisplays(e.target.value);
+                    this.calculateTotals();
+                });
+                
+                // Phone number auto-fill to WhatsApp field
+                document.getElementById('customerPhone').addEventListener('blur', (e) => {
+                    const phone = e.target.value.replace(/\D/g, '');
+                    if (phone.length === 10) {
+                        document.getElementById('sharePhone').value = phone;
+                    }
+                });
+                
+                // WhatsApp phone number formatting
+                document.getElementById('sharePhone').addEventListener('input', (e) => {
+                    this.formatPhoneField(e.target);
+                });
+                
+                // Delete modal events
+                document.getElementById('closeDeleteModal').addEventListener('click', () => this.hideDeleteModal());
+                document.getElementById('cancelDeleteBtn').addEventListener('click', () => this.hideDeleteModal());
+                document.getElementById('confirmDeleteBtn').addEventListener('click', () => this.confirmDeleteInvoice());
+                
+                // Export/Import modal events
+                document.getElementById('closeExportModal').addEventListener('click', () => this.hideExportModal());
+                document.getElementById('copyExportData').addEventListener('click', () => this.copyExportData());
+                document.getElementById('importDataBtn').addEventListener('click', () => this.importData());
+                document.getElementById('downloadData').addEventListener('click', () => this.downloadData());
+                document.getElementById('backupToCloud').addEventListener('click', () => this.backupToCloud());
+                
+                // Settings modal events
+                document.getElementById('closeSettingsModal').addEventListener('click', () => this.hideSettingsModal());
+                document.getElementById('saveSettingsBtn').addEventListener('click', () => this.saveSettings());
+                document.getElementById('resetSettingsBtn').addEventListener('click', () => this.resetSettings());
+                document.getElementById('createBackupBtn').addEventListener('click', () => this.createManualBackup());
+                document.getElementById('restoreBackupBtn').addEventListener('click', () => this.showRestoreBackupModal());
+                
+                // Close modals when clicking outside
+                document.getElementById('deleteModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'deleteModal') this.hideDeleteModal();
+                });
+                document.getElementById('exportModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'exportModal') this.hideExportModal();
+                });
+                document.getElementById('settingsModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'settingsModal') this.hideSettingsModal();
+                });
+                
+                // Auto-save when leaving page
+                window.addEventListener('beforeunload', () => {
+                    if (this.currentInvoiceId) this.autoSave();
+                });
+            },
+            
+            // Format phone number field to Nepal format
+            formatPhoneField: function(input) {
+                let value = input.value.replace(/\D/g, '');
+                
+                // Limit to 10 digits
+                if (value.length > 10) {
+                    value = value.substring(0, 10);
+                }
+                
+                input.value = value;
+                
+                // Auto-format for display (but keep raw value for processing)
+                if (value.length === 10) {
+                    input.style.borderColor = '#28a745';
+                } else {
+                    input.style.borderColor = '';
+                }
+            },
+            
+            // Render home page with invoice list
+            renderHomePage: function() {
+                document.getElementById('homePage').style.display = 'block';
+                document.getElementById('billingPage').style.display = 'none';
+                
+                const personList = document.getElementById('personList');
+                const pagination = document.getElementById('pagination');
+                
+                // Filter and sort invoices
+                let filteredInvoices = this.filterInvoices();
+                filteredInvoices = this.sortInvoices(filteredInvoices);
+                
+                // Calculate total pages
+                const totalPages = Math.ceil(filteredInvoices.length / this.itemsPerPage);
+                this.currentPage = Math.min(this.currentPage, totalPages || 1);
+                
+                // Get invoices for current page
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+                const endIndex = startIndex + this.itemsPerPage;
+                const pageInvoices = filteredInvoices.slice(startIndex, endIndex);
+                
+                // Render invoice cards
+                if (pageInvoices.length === 0) {
+                    personList.innerHTML = '<div class="no-results">No invoices found. Create a new one!</div>';
+                    pagination.innerHTML = '';
+                    return;
+                }
+                
+                personList.innerHTML = '';
+                pageInvoices.forEach(invoice => {
+                    const card = document.createElement('div');
+                    card.className = 'person-card';
+                    
+                    // Calculate invoice total
+                    const total = this.calculateInvoiceTotal(invoice);
+                    const status = invoice.status || 'draft';
+                    const statusColor = {
+                        'draft': '#6c757d',
+                        'sent': '#17a2b8',
+                        'paid': '#28a745',
+                        'overdue': '#dc3545'
+                    }[status];
+                    
+                    card.innerHTML = `
+                        <button class="delete-invoice-btn" data-invoice-id="${invoice.id}">×</button>
+                        <div class="person-name">${invoice.name}</div>
+                        <div class="person-details">
+                            ${invoice.phone ? `<div>📞 ${UI.formatPhone(invoice.phone)}</div>` : ''}
+                            <div>📄 ${invoice.invoiceNumber}</div>
+                            <div>📦 ${invoice.table.data.filter(row => row[0] && row[0].trim() !== '').length} items</div>
+                            ${invoice.address ? `<div>📍 ${invoice.address}</div>` : ''}
+                            <div style="color: ${statusColor}; font-weight: bold;">${status.toUpperCase()}</div>
+                        </div>
+                        <div class="person-date">
+                            <span>🕒 ${new Date(invoice.updatedAt).toLocaleDateString()}</span>
+                            <span class="invoice-total">${UI.formatCurrency(total, invoice.currency || 'NPR')}</span>
+                        </div>
+                    `;
+                    
+                    // Add click event to open invoice
+                    card.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('delete-invoice-btn')) {
+                            this.openInvoice(invoice.id);
+                        }
+                    });
+                    
+                    // Add delete event to delete button
+                    const deleteBtn = card.querySelector('.delete-invoice-btn');
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.showDeleteModal(invoice.id);
+                    });
+                    
+                    personList.appendChild(card);
+                });
+                
+                // Render pagination
+                this.renderPagination(totalPages);
+            },
+            
+            // Show delete confirmation modal
+            showDeleteModal: function(invoiceId) {
+                this.invoiceToDelete = invoiceId;
+                document.getElementById('deleteModal').style.display = 'flex';
+            },
+            
+            // Hide delete confirmation modal
+            hideDeleteModal: function() {
+                this.invoiceToDelete = null;
+                document.getElementById('deleteModal').style.display = 'none';
+            },
+            
+            // Confirm and delete invoice
+            confirmDeleteInvoice: function() {
+                if (!this.invoiceToDelete) return;
+                
+                const invoiceIndex = this.invoices.findIndex(inv => inv.id === this.invoiceToDelete);
+                if (invoiceIndex !== -1) {
+                    this.invoices.splice(invoiceIndex, 1);
+                    DataManager.saveData(this.invoices);
+                    UI.showToast('Invoice deleted successfully', 'success');
+                    this.hideDeleteModal();
+                    this.renderHomePage();
+                }
+            },
+            
+            // Filter invoices based on search term and filters
+            filterInvoices: function() {
+                let filteredInvoices = this.invoices;
+                
+                // Text search
+                if (this.searchTerm) {
+                    const term = this.searchTerm.toLowerCase();
+                    filteredInvoices = filteredInvoices.filter(invoice => 
+                        invoice.name.toLowerCase().includes(term) ||
+                        (invoice.phone && invoice.phone.toLowerCase().includes(term)) ||
+                        (invoice.invoiceNumber && invoice.invoiceNumber.toLowerCase().includes(term)) ||
+                        (invoice.address && invoice.address.toLowerCase().includes(term)) ||
+                        this.invoiceContainsItem(invoice, term)
+                    );
+                }
+                
+                // Date filter
+                if (this.filters.date !== 'all') {
+                    const now = new Date();
+                    filteredInvoices = filteredInvoices.filter(invoice => {
+                        const invoiceDate = new Date(invoice.invoiceDate);
+                        switch (this.filters.date) {
+                            case 'today':
+                                return invoiceDate.toDateString() === now.toDateString();
+                            case 'week':
+                                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                                return invoiceDate >= weekAgo;
+                            case 'month':
+                                const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                                return invoiceDate >= monthAgo;
+                            default:
+                                return true;
+                        }
+                    });
+                }
+                
+                // Amount filter
+                if (this.filters.amount !== 'all') {
+                    filteredInvoices = filteredInvoices.filter(invoice => {
+                        const total = this.calculateInvoiceTotal(invoice);
+                        switch (this.filters.amount) {
+                            case '0-1000':
+                                return total >= 0 && total <= 1000;
+                            case '1000-5000':
+                                return total > 1000 && total <= 5000;
+                            case '5000-10000':
+                                return total > 5000 && total <= 10000;
+                            case '10000+':
+                                return total > 10000;
+                            default:
+                                return true;
+                        }
+                    });
+                }
+                
+                // Status filter
+                if (this.filters.status !== 'all') {
+                    filteredInvoices = filteredInvoices.filter(invoice => 
+                        (invoice.status || 'draft') === this.filters.status
+                    );
+                }
+                
+                return filteredInvoices;
+            },
+            
+            // Sort invoices based on selected option
+            sortInvoices: function(invoices) {
+                switch (this.sortBy) {
+                    case 'newest':
+                        return invoices.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                    case 'oldest':
+                        return invoices.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+                    case 'total-high':
+                        return invoices.sort((a, b) => this.calculateInvoiceTotal(b) - this.calculateInvoiceTotal(a));
+                    case 'total-low':
+                        return invoices.sort((a, b) => this.calculateInvoiceTotal(a) - this.calculateInvoiceTotal(b));
+                    case 'name':
+                        return invoices.sort((a, b) => a.name.localeCompare(b.name));
+                    default:
+                        return invoices;
+                }
+            },
+            
+            // Render pagination controls
+            renderPagination: function(totalPages) {
+                const pagination = document.getElementById('pagination');
+                
+                if (totalPages <= 1) {
+                    pagination.innerHTML = '';
+                    return;
+                }
+                
+                let html = '';
+                
+                // Previous button
+                if (this.currentPage > 1) {
+                    html += `<button onclick="BillingSystem.goToPage(${this.currentPage - 1})">← Previous</button>`;
+                }
+                
+                // Page numbers
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === this.currentPage) {
+                        html += `<button class="active">${i}</button>`;
+                    } else {
+                        html += `<button onclick="BillingSystem.goToPage(${i})">${i}</button>`;
+                    }
+                }
+                
+                // Next button
+                if (this.currentPage < totalPages) {
+                    html += `<button onclick="BillingSystem.goToPage(${this.currentPage + 1})">Next →</button>`;
+                }
+                
+                pagination.innerHTML = html;
+            },
+            
+            // Go to specific page
+            goToPage: function(page) {
+                this.currentPage = page;
+                this.renderHomePage();
+            },
+            
+            // Search invoices by name, phone, or items
+            searchInvoices: function() {
+                this.searchTerm = document.getElementById('searchInput').value;
+                this.currentPage = 1;
+                this.renderHomePage();
+            },
+            
+            // Check if invoice contains search term in items
+            invoiceContainsItem: function(invoice, term) {
+                for (let row of invoice.table.data) {
+                    for (let cell of row) {
+                        if (cell && cell.toLowerCase().includes(term)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            },
+            
+            // Calculate total for an invoice
+            calculateInvoiceTotal: function(invoice) {
+                let subtotal = 0;
+                const totalIndex = invoice.table.headers.findIndex(h => 
+                    h.toLowerCase().includes('total'));
+                
+                if (totalIndex >= 0) {
+                    for (let row of invoice.table.data) {
+                        subtotal += parseFloat(row[totalIndex]) || 0;
+                    }
+                }
+                
+                // Apply tax if exists
+                const taxRate = invoice.taxRate || 0;
+                return subtotal + (subtotal * (taxRate / 100));
+            },
+            
+            // Create a new invoice
+            createNewInvoice: function() {
+                const name = prompt('Enter customer name for the new invoice:');
+                if (!name) return;
+                
+                if (!name.trim()) {
+                    UI.showToast('Customer name is required', 'error');
+                    return;
+                }
+                
+                const invoiceNumber = DataManager.getNextInvoiceNumber();
+                
+                const newInvoice = {
+                    id: Date.now().toString(),
+                    name: name.trim(),
+                    phone: '',
+                    address: '',
+                    invoiceNumber: invoiceNumber,
+                    invoiceDate: new Date().toISOString().split('T')[0],
+                    taxRate: this.settings.defaultTaxRate,
+                    currency: this.settings.defaultCurrency,
+                    status: 'draft',
+                    table: {
+                        headers: this.settings.defaultColumns.split(',').map(col => col.trim()),
+                        data: [Array(this.settings.defaultColumns.split(',').length).fill('')]
+                    },
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                // Add current date to the first row if Date column exists
+                const dateIndex = newInvoice.table.headers.findIndex(h => h.toLowerCase().includes('date'));
+                if (dateIndex !== -1) {
+                    newInvoice.table.data[0][dateIndex] = new Date().toLocaleDateString();
+                }
+                
+                this.invoices.push(newInvoice);
+                DataManager.saveData(this.invoices);
+                this.openInvoice(newInvoice.id);
+                UI.showToast('New invoice created successfully!', 'success');
+            },
+            
+            // Open invoice for editing
+            openInvoice: function(invoiceId) {
+                const invoice = this.invoices.find(p => p.id === invoiceId);
+                if (!invoice) return;
+                
+                document.getElementById('homePage').style.display = 'none';
+                document.getElementById('billingPage').style.display = 'block';
+                
+                // Populate customer info
+                document.getElementById('customerName').value = invoice.name;
+                document.getElementById('customerPhone').value = invoice.phone || '';
+                document.getElementById('customerAddress').value = invoice.address || '';
+                document.getElementById('invoiceNumber').value = invoice.invoiceNumber;
+                document.getElementById('invoiceDate').value = invoice.invoiceDate;
+                document.getElementById('taxRate').value = invoice.taxRate || 0;
+                document.getElementById('invoiceStatus').value = invoice.status || 'draft';
+                document.getElementById('currency').value = invoice.currency || 'NPR';
+                document.getElementById('sharePhone').value = invoice.phone || '';
+                
+                document.getElementById('customerNameDisplay').textContent = invoice.name;
+                document.getElementById('taxRateDisplay').textContent = (invoice.taxRate || 0) + '%';
+                
+                this.currentInvoiceId = invoiceId;
+                this.renderTable();
+                this.calculateTotals();
+            },
+            
+            // Show home page
+            showHomePage: function() {
+                if (this.currentInvoiceId) {
+                    this.autoSave();
+                }
+                this.currentInvoiceId = null;
+                this.renderHomePage();
+            },
+            
+            // Update customer name in real-time
+            updateCustomerName: function() {
+                const name = document.getElementById('customerName').value;
+                document.getElementById('customerNameDisplay').textContent = name || 'Customer';
+            },
+            
+            // Render the billing table (without inline add/delete buttons)
+            renderTable: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice) return;
+                
+                const table = document.getElementById('billingTable');
+                table.innerHTML = '';
+                
+                // Create header row
+                const headerRow = document.createElement('tr');
+                invoice.table.headers.forEach((header, index) => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                table.appendChild(headerRow);
+                
+                // Create data rows
+                for (let i = 0; i < invoice.table.data.length; i++) {
+                    const row = document.createElement('tr');
+                    
+                    for (let j = 0; j < invoice.table.headers.length; j++) {
+                        const cell = document.createElement('td');
+                        
+                        // Check if this is a date column
+                        const isDateColumn = invoice.table.headers[j].toLowerCase().includes('date');
+                        
+                        if (isDateColumn) {
+                            cell.className = 'date-cell';
+                            const dateSpan = document.createElement('span');
+                            
+                            // If the cell is empty, set today's date
+                            if (!invoice.table.data[i][j]) {
+                                invoice.table.data[i][j] = new Date().toLocaleDateString();
+                            }
+                            
+                            dateSpan.textContent = invoice.table.data[i][j];
+                            cell.appendChild(dateSpan);
+                        } else {
+                            const input = document.createElement('input');
+                            input.type = 'text';
+                            input.value = invoice.table.data[i][j] || '';
+                            input.placeholder = `Enter ${invoice.table.headers[j]}`;
+                            
+                            // Store row and column indices for event handling
+                            input.dataset.row = i;
+                            input.dataset.col = j;
+                            
+                            input.addEventListener('input', (e) => {
+                                const rowIdx = parseInt(e.target.dataset.row);
+                                const colIdx = parseInt(e.target.dataset.col);
+                                invoice.table.data[rowIdx][colIdx] = e.target.value;
+                                invoice.updatedAt = new Date().toISOString();
+                                
+                                // Real-time calculation
+                                this.calculateRowTotal(rowIdx);
+                                this.calculateTotals();
+                            });
+                            
+                            // Make total column read-only
+                            if (invoice.table.headers[j].toLowerCase().includes('total')) {
+                                input.readOnly = true;
+                                input.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                            }
+                            
+                            // Special handling for numeric columns
+                            if (invoice.table.headers[j].toLowerCase().includes('price') || 
+                                invoice.table.headers[j].toLowerCase().includes('quantity')) {
+                                input.addEventListener('blur', (e) => {
+                                    // Format numeric values
+                                    const value = e.target.value;
+                                    if (value && !isNaN(value)) {
+                                        if (invoice.table.headers[j].toLowerCase().includes('price')) {
+                                            e.target.value = parseFloat(value).toFixed(2);
+                                            invoice.table.data[i][j] = e.target.value;
+                                        } else if (invoice.table.headers[j].toLowerCase().includes('quantity')) {
+                                            e.target.value = parseInt(value) || value;
+                                            invoice.table.data[i][j] = e.target.value;
+                                        }
+                                    }
+                                });
+                            }
+                            
+                            cell.appendChild(input);
+                        }
+                        
+                        row.appendChild(cell);
+                    }
+                    
+                    table.appendChild(row);
+                }
+            },
+            
+            // Add a new row to the table
+            addRow: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice) return;
+                
+                // Create new row with empty values
+                const newRow = Array(invoice.table.headers.length).fill('');
+                
+                // Add current date to date column if exists
+                const dateIndex = invoice.table.headers.findIndex(h => h.toLowerCase().includes('date'));
+                if (dateIndex !== -1) {
+                    newRow[dateIndex] = new Date().toLocaleDateString();
+                }
+                
+                invoice.table.data.push(newRow);
+                invoice.updatedAt = new Date().toISOString();
+                this.renderTable();
+                UI.showToast('New row added', 'success');
+            },
+            
+            // Delete the last row from the table
+            deleteLastRow: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice || invoice.table.data.length <= 1) {
+                    UI.showToast('Cannot delete the only row', 'error');
+                    return;
+                }
+                
+                invoice.table.data.pop();
+                invoice.updatedAt = new Date().toISOString();
+                this.renderTable();
+                this.calculateTotals();
+                UI.showToast('Last row deleted', 'success');
+            },
+            
+            // Add a new column to the table
+            addColumn: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice) return;
+                
+                const columnTypes = {
+                    'Discount %': 'discount',
+                    'Discount Amount': 'discount-amount',
+                    'Notes': 'notes',
+                    'Shipping': 'shipping',
+                    'Tax Rate': 'tax-rate',
+                    'Unit': 'unit',
+                    'SKU': 'sku',
+                    'Date': 'date',
+                    'Custom': 'custom'
+                };
+                
+                const selected = prompt(
+                    'Select column type:\n' +
+                    '1. Discount %\n' +
+                    '2. Discount Amount\n' +
+                    '3. Notes\n' +
+                    '4. Shipping\n' +
+                    '5. Tax Rate\n' +
+                    '6. Unit\n' +
+                    '7. SKU\n' +
+                    '8. Date\n' +
+                    '9. Custom (enter your own name)'
+                );
+                
+                let newHeader = '';
+                if (selected === '1') newHeader = 'Discount %';
+                else if (selected === '2') newHeader = 'Discount Amount';
+                else if (selected === '3') newHeader = 'Notes';
+                else if (selected === '4') newHeader = 'Shipping';
+                else if (selected === '5') newHeader = 'Tax Rate';
+                else if (selected === '6') newHeader = 'Unit';
+                else if (selected === '7') newHeader = 'SKU';
+                else if (selected === '8') newHeader = 'Date';
+                else if (selected === '9') newHeader = prompt('Enter custom column name:');
+                else return;
+                
+                if (!newHeader) return;
+                
+                invoice.table.headers.push(newHeader);
+                
+                // Add data to each row
+                invoice.table.data.forEach(row => {
+                    // If it's a date column, add current date
+                    if (newHeader.toLowerCase().includes('date')) {
+                        row.push(new Date().toLocaleDateString());
+                    } else {
+                        row.push('');
+                    }
+                });
+                
+                invoice.updatedAt = new Date().toISOString();
+                this.renderTable();
+                UI.showToast(`Column "${newHeader}" added`, 'success');
+            },
+            
+            // Delete the last column from the table
+            deleteLastColumn: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice || invoice.table.headers.length <= 1) {
+                    UI.showToast('Cannot delete the only column', 'error');
+                    return;
+                }
+                
+                const headerName = invoice.table.headers.pop();
+                invoice.table.data.forEach(row => row.pop());
+                invoice.updatedAt = new Date().toISOString();
+                this.renderTable();
+                this.calculateTotals();
+                UI.showToast(`Column "${headerName}" deleted`, 'success');
+            },
+            
+            // Calculate total for a specific row
+            calculateRowTotal: function(rowIndex) {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice) return;
+                
+                // Find price and quantity columns
+                const priceIndex = invoice.table.headers.findIndex(h => 
+                    h.toLowerCase().includes('price'));
+                const quantityIndex = invoice.table.headers.findIndex(h => 
+                    h.toLowerCase().includes('quantity'));
+                const totalIndex = invoice.table.headers.findIndex(h => 
+                    h.toLowerCase().includes('total'));
+                
+                if (priceIndex >= 0 && quantityIndex >= 0 && totalIndex >= 0) {
+                    const price = parseFloat(invoice.table.data[rowIndex][priceIndex]) || 0;
+                    const quantity = parseFloat(invoice.table.data[rowIndex][quantityIndex]) || 0;
+                    invoice.table.data[rowIndex][totalIndex] = (price * quantity).toFixed(2);
+                    
+                    invoice.updatedAt = new Date().toISOString();
+                    
+                    // Update the display
+                    const table = document.getElementById('billingTable');
+                    if (table.rows[rowIndex + 1]) {
+                        const totalInput = table.rows[rowIndex + 1].cells[totalIndex].querySelector('input');
+                        if (totalInput) {
+                            totalInput.value = invoice.table.data[rowIndex][totalIndex];
+                        }
+                    }
+                }
+            },
+            
+            // Calculate totals for the entire invoice
+            calculateTotals: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice) return;
+                
+                // Update tax rate display
+                const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+                document.getElementById('taxRateDisplay').textContent = taxRate + '%';
+                
+                // Save tax rate to invoice
+                invoice.taxRate = taxRate;
+                
+                // Find total column
+                const totalIndex = invoice.table.headers.findIndex(h => 
+                    h.toLowerCase().includes('total'));
+                
+                let subtotal = 0;
+                if (totalIndex >= 0) {
+                    for (let i = 0; i < invoice.table.data.length; i++) {
+                        subtotal += parseFloat(invoice.table.data[i][totalIndex]) || 0;
+                    }
+                }
+                
+                const tax = subtotal * (taxRate / 100);
+                const total = subtotal + tax;
+                const currency = document.getElementById('currency').value;
+                
+                // Update summary display
+                document.getElementById('subtotalValue').textContent = UI.formatCurrency(subtotal, currency);
+                document.getElementById('taxValue').textContent = UI.formatCurrency(tax, currency);
+                document.getElementById('totalValue').textContent = UI.formatCurrency(total, currency);
+            },
+            
+            // Clear the table data (keep headers)
+            clearTable: function() {
+                if (confirm('Are you sure you want to clear all table data?')) {
+                    const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                    if (!invoice) return;
+                    
+                    // Clear all rows but keep one empty row
+                    invoice.table.data = [Array(invoice.table.headers.length).fill('')];
+                    
+                    // Add current date to date column if exists
+                    const dateIndex = invoice.table.headers.findIndex(h => h.toLowerCase().includes('date'));
+                    if (dateIndex !== -1) {
+                        invoice.table.data[0][dateIndex] = new Date().toLocaleDateString();
+                    }
+                    
+                    invoice.updatedAt = new Date().toISOString();
+                    this.renderTable();
+                    this.calculateTotals();
+                    UI.showToast('Table cleared', 'success');
+                }
+            },
+            
+            // Auto-save the current invoice
+            autoSave: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (invoice) {
+                    // Update customer info
+                    invoice.name = document.getElementById('customerName').value;
+                    invoice.phone = document.getElementById('customerPhone').value;
+                    invoice.address = document.getElementById('customerAddress').value;
+                    invoice.invoiceDate = document.getElementById('invoiceDate').value;
+                    invoice.taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+                    invoice.status = document.getElementById('invoiceStatus').value;
+                    invoice.currency = document.getElementById('currency').value;
+                    
+                    invoice.updatedAt = new Date().toISOString();
+                    DataManager.saveData(this.invoices);
+                }
+            },
+            
+            // Validate invoice before saving
+            validateInvoice: function() {
+                let isValid = true;
+                
+                // Validate required fields
+                if (!UI.validateRequired('customerName', 'Customer name')) isValid = false;
+                if (!UI.validateNumber('taxRate', 'Tax rate', 0, 50)) isValid = false;
+                
+                // Validate phone if provided
+                const phone = document.getElementById('customerPhone').value;
+                if (phone && !UI.validatePhone(phone)) {
+                    UI.showFieldError('customerPhone', 'Please enter a valid 10-digit phone number');
+                    isValid = false;
+                }
+                
+                return isValid;
+            },
+            
+            // Save the current invoice
+            saveInvoice: function() {
+                if (!this.validateInvoice()) {
+                    UI.showToast('Please fix validation errors before saving', 'error');
+                    return;
+                }
+                
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (invoice) {
+                    // Update customer info
+                    invoice.name = document.getElementById('customerName').value;
+                    invoice.phone = document.getElementById('customerPhone').value;
+                    invoice.address = document.getElementById('customerAddress').value;
+                    invoice.invoiceDate = document.getElementById('invoiceDate').value;
+                    invoice.taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+                    invoice.status = document.getElementById('invoiceStatus').value;
+                    invoice.currency = document.getElementById('currency').value;
+                    
+                    invoice.updatedAt = new Date().toISOString();
+                    DataManager.saveData(this.invoices);
+                    UI.showToast('Invoice saved successfully!', 'success');
+                }
+            },
+            
+            // Share invoice via WhatsApp with proper Nepal format
+            shareOnWhatsApp: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice) return;
+                
+                // Get phone number and format it
+                let phoneNumber = document.getElementById('sharePhone').value.replace(/\D/g, '');
+                
+                if (!phoneNumber) {
+                    UI.showToast('Please enter a phone number', 'error');
+                    document.getElementById('sharePhone').focus();
+                    return;
+                }
+                
+                if (!UI.validatePhone(phoneNumber)) {
+                    UI.showToast('Please enter a valid 10-digit phone number', 'error');
+                    document.getElementById('sharePhone').focus();
+                    return;
+                }
+                
+                // Use Nepal country code
+                phoneNumber = '977' + phoneNumber;
+                
+                const messageNote = document.getElementById('messageNote').value;
+                
+                // Format the message with proper table formatting
+                let message = `*Invoice for ${invoice.name}*\n`;
+                message += `Invoice #: ${invoice.invoiceNumber}\n`;
+                message += `Date: ${invoice.invoiceDate}\n`;
+                if (invoice.phone) message += `Phone: ${UI.formatPhone(invoice.phone)}\n`;
+                if (invoice.address) message += `Address: ${invoice.address}\n`;
+                message += `\n`;
+                
+                // Create a formatted table
+                const headers = invoice.table.headers;
+                const data = invoice.table.data.filter(row => row[0] && row[0].trim() !== '');
+                
+                if (data.length === 0) {
+                    UI.showToast('No data to share. Please add items to the invoice.', 'error');
+                    return;
+                }
+                
+                // Find the maximum width for each column
+                const colWidths = headers.map((header, colIndex) => {
+                    let maxWidth = header.length;
+                    data.forEach(row => {
+                        if (row[colIndex] && row[colIndex].length > maxWidth) {
+                            maxWidth = row[colIndex].length;
+                        }
+                    });
+                    return Math.min(maxWidth, 15); // Limit width to prevent overflow
+                });
+                
+                // Create header row
+                let headerRow = '';
+                headers.forEach((header, i) => {
+                    headerRow += header.padEnd(colWidths[i]) + '  ';
+                });
+                message += headerRow + '\n';
+                
+                // Add separator
+                let separator = '';
+                colWidths.forEach(width => {
+                    separator += '-'.repeat(width) + '  ';
+                });
+                message += separator + '\n';
+                
+                // Add data rows
+                data.forEach(row => {
+                    let rowText = '';
+                    row.forEach((cell, i) => {
+                        rowText += (cell || '').padEnd(colWidths[i]) + '  ';
+                    });
+                    message += rowText + '\n';
+                });
+                
+                // Calculate totals
+                const totalIndex = invoice.table.headers.findIndex(h => 
+                    h.toLowerCase().includes('total'));
+                
+                let subtotal = 0;
+                if (totalIndex >= 0) {
+                    for (let i = 0; i < invoice.table.data.length; i++) {
+                        subtotal += parseFloat(invoice.table.data[i][totalIndex]) || 0;
+                    }
+                }
+                
+                const tax = subtotal * (invoice.taxRate / 100);
+                const total = subtotal + tax;
+                
+                message += `\n*Subtotal:* ${UI.formatCurrency(subtotal, invoice.currency)}\n`;
+                message += `*Tax (${invoice.taxRate}%):* ${UI.formatCurrency(tax, invoice.currency)}\n`;
+                message += `*Total:* ${UI.formatCurrency(total, invoice.currency)}\n`;
+                
+                if (messageNote) {
+                    message += `\n*Note:* ${messageNote}`;
+                }
+                
+                message += `\n\n_Code By Hariom Sah_`;
+                
+                // Encode the message for URL
+                const encodedMessage = encodeURIComponent(message);
+                
+                // Create WhatsApp URL with Nepal country code
+                const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                
+                // Open WhatsApp
+                window.open(whatsappUrl, '_blank');
+                UI.showToast('Opening WhatsApp...', 'success', 2000);
+            },
+            
+            // Export to PDF
+            exportToPdf: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice) return;
+                
+                PDFGenerator.downloadPDF(invoice);
+            },
+            
+            // Print invoice
+            printInvoice: function() {
+                const invoice = this.invoices.find(p => p.id === this.currentInvoiceId);
+                if (!invoice) return;
+                
+                PDFGenerator.printInvoice(invoice);
+            },
+            
+            // Show export/import modal
+            showExportModal: function() {
+                const modal = document.getElementById('exportModal');
+                const exportData = document.getElementById('exportData');
+                
+                exportData.value = DataManager.exportData();
+                modal.style.display = 'flex';
+            },
+            
+            // Hide export/import modal
+            hideExportModal: function() {
+                const modal = document.getElementById('exportModal');
+                modal.style.display = 'none';
+            },
+            
+            // Copy export data to clipboard
+            copyExportData: function() {
+                const exportData = document.getElementById('exportData');
+                exportData.select();
+                document.execCommand('copy');
+                UI.showToast('Data copied to clipboard!', 'success');
+            },
+            
+            // Import data from JSON
+            importData: function() {
+                const importData = document.getElementById('importData').value;
+                if (!importData) {
+                    UI.showToast('Please enter JSON data to import', 'error');
+                    return;
+                }
+                
+                const result = DataManager.importData(importData);
+                if (result.success) {
+                    this.invoices = DataManager.loadData();
+                    this.renderHomePage();
+                    this.hideExportModal();
+                    UI.showToast(result.message, 'success');
+                } else {
+                    UI.showToast(result.message, 'error');
+                }
+            },
+            
+            // Download data as JSON file
+            downloadData: function() {
+                const data = DataManager.exportData();
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'billing-data-backup.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                UI.showToast('Data downloaded successfully!', 'success');
+            },
+            
+            // Backup to cloud (simulated)
+            backupToCloud: function() {
+                UI.showToast('Backing up to cloud...', 'info');
+                
+                DataManager.cloudBackup()
+                    .then(result => {
+                        UI.showToast(result.message, result.success ? 'success' : 'error');
+                    })
+                    .catch(error => {
+                        console.error('Cloud backup error:', error);
+                        UI.showToast('Cloud backup failed', 'error');
+                    });
+            },
+            
+            // Show settings modal
+            showSettingsModal: function() {
+                const modal = document.getElementById('settingsModal');
+                
+                // Populate settings
+                document.getElementById('defaultTaxRate').value = this.settings.defaultTaxRate;
+                document.getElementById('defaultCurrency').value = this.settings.defaultCurrency;
+                document.getElementById('defaultColumns').value = this.settings.defaultColumns;
+                document.getElementById('autoBackup').value = this.settings.autoBackup;
+                
+                modal.style.display = 'flex';
+            },
+            
+            // Hide settings modal
+            hideSettingsModal: function() {
+                const modal = document.getElementById('settingsModal');
+                modal.style.display = 'none';
+            },
+            
+            // Save settings
+            saveSettings: function() {
+                this.settings.defaultTaxRate = parseFloat(document.getElementById('defaultTaxRate').value) || 0;
+                this.settings.defaultCurrency = document.getElementById('defaultCurrency').value;
+                this.settings.defaultColumns = document.getElementById('defaultColumns').value;
+                this.settings.autoBackup = document.getElementById('autoBackup').value;
+                
+                if (DataManager.saveSettings(this.settings)) {
+                    this.applySettings();
+                    this.hideSettingsModal();
+                    UI.showToast('Settings saved successfully!', 'success');
+                } else {
+                    UI.showToast('Error saving settings', 'error');
+                }
+            },
+            
+            // Reset settings to defaults
+            resetSettings: function() {
+                if (confirm('Are you sure you want to reset all settings to defaults?')) {
+                    this.settings = DataManager.getDefaultSettings();
+                    DataManager.saveSettings(this.settings);
+                    this.applySettings();
+                    this.hideSettingsModal();
+                    UI.showToast('Settings reset to defaults', 'success');
+                }
+            },
+            
+            // Create manual backup
+            createManualBackup: function() {
+                DataManager.createBackup(this.invoices);
+                UI.showToast('Manual backup created successfully!', 'success');
+            },
+            
+            // Show restore backup modal (simplified)
+            showRestoreBackupModal: function() {
+                const backups = DataManager.getBackups();
+                if (backups.length === 0) {
+                    UI.showToast('No backups available', 'warning');
+                    return;
+                }
+                
+                const backupList = backups.map((backup, index) => 
+                    `${index + 1}. ${new Date(backup.timestamp).toLocaleString()}`
+                ).join('\n');
+                
+                const backupIndex = prompt(`Available backups:\n${backupList}\n\nEnter backup number to restore:`);
+                if (backupIndex === null) return;
+                
+                const index = parseInt(backupIndex) - 1;
+                if (isNaN(index) || index < 0 || index >= backups.length) {
+                    UI.showToast('Invalid backup number', 'error');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to restore this backup? Current data will be replaced.')) {
+                    const result = DataManager.restoreBackup(index);
+                    if (result.success) {
+                        this.invoices = DataManager.loadData();
+                        this.renderHomePage();
+                        UI.showToast(result.message, 'success');
+                    } else {
+                        UI.showToast(result.message, 'error');
+                    }
+                }
+            }
+        };
+
+        // Initialize the billing system when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            BillingSystem.init();
+            
+            // Set today's date as default
+            document.getElementById('invoiceDate').value = new Date().toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>
